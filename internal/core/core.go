@@ -172,7 +172,6 @@ func (e *Editor) addLine() {
 	copy(secondHalf, e.ctx.textBuffer[e.ctx.currentRow][e.ctx.currentCol:])
 
 	e.ctx.textBuffer[e.ctx.currentRow] = firstHalf
-
 	e.ctx.currentRow++
 	e.ctx.currentCol = 0
 
@@ -208,9 +207,35 @@ func (e *Editor) eraseCol() {
 	copy(alteredRow[e.ctx.currentCol:], e.getCurrentRow()[e.ctx.currentCol:])
 	e.ctx.textBuffer[e.ctx.currentRow] = alteredRow
 }
+
+func (e *Editor) eraseLine() {
+	appendedLine := make([]rune, len(e.ctx.textBuffer[e.ctx.currentRow]))
+	copy(appendedLine, e.getCurrentRow()[e.ctx.currentCol:])
+
+	newTextBuffer := make([][]rune, len(e.ctx.textBuffer)-1)
+
+	copy(newTextBuffer[:e.ctx.currentRow], e.ctx.textBuffer[:e.ctx.currentRow])
+	copy(newTextBuffer[e.ctx.currentRow:], e.ctx.textBuffer[e.ctx.currentRow+1:])
+
+	e.ctx.textBuffer = newTextBuffer
+	e.ctx.currentRow--
+
+	e.ctx.currentCol = len(e.getCurrentRow())
+
+	updatedLine := make([]rune, len(e.ctx.textBuffer)+len(appendedLine))
+
+	copy(updatedLine[:len(e.getCurrentRow())], e.getCurrentRow())
+	copy(updatedLine[len(e.getCurrentRow()):], appendedLine)
+
+	e.ctx.textBuffer[e.ctx.currentRow] = updatedLine
+
+}
+
 func (e *Editor) deleteRune() {
 	if e.ctx.currentCol > 0 {
 		e.eraseCol()
+	} else if e.ctx.currentRow > 0 {
+		e.eraseLine()
 	}
 }
 
