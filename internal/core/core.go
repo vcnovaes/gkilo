@@ -201,6 +201,19 @@ func (e *Editor) writeFile() {
 	defer file.Close()
 }
 
+func (e *Editor) eraseCol() {
+	e.ctx.currentCol--
+	alteredRow := make([]rune, len(e.getCurrentRow())-1)
+	copy(alteredRow[:e.ctx.currentCol], e.getCurrentRow()[:e.ctx.currentCol])
+	copy(alteredRow[e.ctx.currentCol:], e.getCurrentRow()[e.ctx.currentCol:])
+	e.ctx.textBuffer[e.ctx.currentRow] = alteredRow
+}
+func (e *Editor) deleteRune() {
+	if e.ctx.currentCol > 0 {
+		e.eraseCol()
+	}
+}
+
 func (e *Editor) processKeyEvent() {
 	keyEvent := getKey()
 	if keyEvent.Key == termbox.KeyEsc {
@@ -209,12 +222,6 @@ func (e *Editor) processKeyEvent() {
 		if e.ctx.mode == MODE_EDIT {
 			e.insertRune(keyEvent)
 			e.ctx.modifiedFile = true
-			if keyEvent.Ch == 'q' {
-				defer func() {
-					e.Close()
-					os.Exit(0)
-				}()
-			}
 			return
 		}
 		switch keyEvent.Ch {
@@ -236,8 +243,18 @@ func (e *Editor) processKeyEvent() {
 		case termbox.KeyCtrlQ:
 			e.Close()
 			os.Exit(0)
+		default:
+			break
 		}
 
+		if e.ctx.mode == MODE_EDIT {
+			switch keyEvent.Key {
+			case termbox.KeyBackspace:
+			case termbox.KeyBackspace2:
+				e.deleteRune()
+
+			}
+		}
 	}
 }
 
