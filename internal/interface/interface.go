@@ -15,7 +15,6 @@ func EditorRefreshScreen() {
 
 
 func DrawRows() {
-	
     _, h,_ := common.GetWindowSize()
     for y:=0; y< h;y++ {
         fmt.Print("~\r\n")
