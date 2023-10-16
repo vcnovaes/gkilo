@@ -1,3 +1,5 @@
+![](./assets/Welcome.png)
+
 # Gkilo
 
 An simple terminal based editor written in go!
