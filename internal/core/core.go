@@ -2,22 +2,20 @@ package core
 
 import (
 	"bufio"
-	"common"
 	"fmt"
-	tinterface "interface"
+	"ioc"
 	"os"
-	"strconv"
+	"render"
 	"syscall"
-	"unsafe"
+	"textbuffer"
 
-	"github.com/mattn/go-runewidth"
 	"github.com/nsf/termbox-go"
 )
 
-type MODE uint8
+type Mode uint8
 
 const (
-	MODE_DEFAULT = iota
+	MODE_DEFAULT Mode = iota
 	MODE_EDIT
 )
 
@@ -32,95 +30,18 @@ type EditorCtx struct {
 	lineNumberWidth      int
 	offsetCol, offsetRow int
 	modifiedFile         bool
-	mode                 MODE
+	mode                 Mode
 }
 type Editor struct {
-	ctx EditorCtx
+	ctx    EditorCtx
+	buffer textbuffer.TextBuffer
+	canvas render.Canvas
+	file   File
+	mode   Mode
 }
-
-func (e Editor) getCurrentRow() []rune {
-	return e.ctx.textBuffer[e.ctx.currentRow]
-}
-
-func (e *Editor) enableScrollTextBuffer() {
-	if e.ctx.currentRow < e.ctx.offsetRow {
-		e.ctx.offsetRow = e.ctx.currentRow
-	}
-	if e.ctx.currentRow >= e.ctx.offsetRow+e.ctx.screenRows {
-		e.ctx.offsetRow = e.ctx.currentRow - e.ctx.screenRows + 1
-	}
-
-	if e.ctx.currentCol < e.ctx.offsetCol {
-		e.ctx.offsetCol = e.ctx.currentCol
-	}
-	if e.ctx.currentCol >= e.ctx.offsetCol+e.ctx.screenCols-e.ctx.lineNumberWidth {
-		e.ctx.offsetCol = e.ctx.currentCol - e.ctx.screenCols + e.ctx.lineNumberWidth + 1
-	}
-}
-func (e *Editor) defaultFile() {
-	e.ctx.sourceFile = "unamed"
-	e.ctx.textBuffer = append(e.ctx.textBuffer, []rune{})
-}
-
-func (e *Editor) loadFile() {
-	if len(os.Args) > 1 {
-		sourceFile := os.Args[1]
-		ReadFile(sourceFile, &e.ctx)
-	} else {
-		e.defaultFile()
-	}
-}
-func (e Editor) getBufferSize() int {
-	return len(e.ctx.textBuffer)
-}
-
-func (e Editor) render(x, y int, foreground, backaground termbox.Attribute, message string) {
-	for _, ch := range message {
-		termbox.SetCell(x, y, ch, foreground, backaground)
-		x += runewidth.RuneWidth(ch)
-	}
-}
-
-func (e *Editor) getLineNumberWidth() int {
-	e.ctx.lineNumberWidth = len(strconv.Itoa(e.getBufferSize())) + 1
-	return e.ctx.lineNumberWidth
-}
-
-func (e *Editor) displayTextBuffer() {
-	for row := 0; row < e.ctx.screenRows; row++ {
-		textBufferRow := row + e.ctx.offsetRow
-		for col := 0; col < e.ctx.screenCols; col++ {
-			textBufferCol := col + e.ctx.offsetCol
-			if textBufferRow < e.getBufferSize() {
-				lineNumberOffset := e.getLineNumberWidth() - len(strconv.Itoa(textBufferRow+1))
-				e.render(lineNumberOffset, row, termbox.ColorWhite, termbox.ColorDarkGray,
-					strconv.Itoa(textBufferRow+1))
-			}
-			if textBufferRow >= 0 && textBufferRow < e.getBufferSize() &&
-				textBufferCol < len(e.ctx.textBuffer[textBufferRow]) {
-				if e.ctx.textBuffer[textBufferRow][textBufferCol] != rune('\t') {
-					termbox.SetCell(col+e.ctx.lineNumberWidth+1, row,
-						e.ctx.textBuffer[textBufferRow][textBufferCol],
-						termbox.ColorDefault, termbox.ColorDefault)
-				} else {
-					termbox.SetCell(col+e.ctx.lineNumberWidth, row, rune(' '), termbox.ColorGreen, termbox.ColorDefault)
-				}
-			} else if row+e.ctx.offsetRow > (e.getBufferSize() - 1) {
-				termbox.SetCell(0, row, '~', termbox.ColorDarkGray, termbox.ColorDefault)
-			}
-		}
-		termbox.SetChar(e.ctx.screenCols-1, row, '\n')
-	}
-}
-
-func (e *Editor) setCursorPosition() {
-	termbox.SetCursor(e.ctx.currentCol-e.ctx.offsetCol+e.ctx.lineNumberWidth,
-		e.ctx.currentRow-e.ctx.offsetRow)
-}
-
-func (e *Editor) setCurrentRow(insertRow []rune) {
-	e.ctx.textBuffer[e.ctx.currentRow] = insertRow
-	e.ctx.currentCol++
+type File struct {
+	filename string
+	modified bool
 }
 
 func (e *Editor) Init() {
@@ -129,246 +50,84 @@ func (e *Editor) Init() {
 		fmt.Print(err)
 		os.Exit(1)
 	}
-	e.loadFile()
+	file, err := ioc.LoadInputFile("unamed")
+	if err != nil {
+		fmt.Println("Error on inputfile:", err)
+		os.Exit(1)
+	}
+	e.buffer.LoadFile(file)
 }
 
 func (e Editor) Close() {
 	termbox.Close()
-}
-
-func (e *Editor) insertRune(event termbox.Event) {
-	insertLine := make([]rune, len(e.ctx.textBuffer[e.ctx.currentRow])+1)
-	copy(insertLine[:e.ctx.currentCol], e.ctx.textBuffer[e.ctx.currentRow][:e.ctx.currentCol])
-	ch := rune(event.Ch)
-	if event.Key == termbox.KeySpace || event.Key == termbox.KeyTab {
-		ch = rune(' ')
-	}
-	insertLine[e.ctx.currentCol] = ch
-	copy(insertLine[e.ctx.currentCol+1:], e.ctx.textBuffer[e.ctx.currentRow][e.ctx.currentCol:])
-	e.ctx.textBuffer[e.ctx.currentRow] = insertLine
-	e.ctx.currentCol++
+	os.Exit(0)
 }
 
 func (e *Editor) Run() {
-	for {
+	theme := render.Theme{
+		LineNumber:       render.Composition{FG: termbox.ColorGreen, BG: termbox.ColorDarkGray},
+		Text:             render.Composition{FG: termbox.ColorLightGreen, BG: termbox.ColorBlack},
+		EmptyLine:        render.Composition{FG: termbox.ColorDefault, BG: termbox.ColorDefault},
+		EditorBackground: termbox.ColorDefault,
+		EmptyLineSymbol:  "~",
+	}
 
-		e.ctx.screenCols, e.ctx.screenRows = termbox.Size()
-		termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
-		e.enableScrollTextBuffer()
-		e.displayTextBuffer()
-		e.setCursorPosition()
-		termbox.Flush()
+	for {
+		e.canvas.Init(theme)
+		e.buffer.Update(&e.canvas)
+		e.canvas.Flush()
 		e.processKeyEvent()
 	}
 }
 
-func (e *Editor) addLine() {
-
-	// spliting in two halfs
-	firstHalf := make([]rune, len(e.getCurrentRow()[e.ctx.currentCol:]))
-	secondHalf := make([]rune, len(e.getCurrentRow()[:e.ctx.currentCol]))
-	// copying the content
-	copy(firstHalf, e.ctx.textBuffer[e.ctx.currentRow][:e.ctx.currentCol])
-	copy(secondHalf, e.ctx.textBuffer[e.ctx.currentRow][e.ctx.currentCol:])
-
-	e.ctx.textBuffer[e.ctx.currentRow] = firstHalf
-	e.ctx.currentRow++
-	e.ctx.currentCol = 0
-
-	newBuffer := make([][]rune, len(e.ctx.textBuffer)+1)
-	copy(newBuffer[:e.ctx.currentRow], e.ctx.textBuffer[:e.ctx.currentRow])
-	newBuffer[e.ctx.currentRow] = secondHalf
-
-	copy(newBuffer[e.ctx.currentRow+1:], e.ctx.textBuffer[e.ctx.currentRow:])
-
-	e.ctx.textBuffer = newBuffer
-}
-
 func (e *Editor) writeFile() {
-	file, err := os.Create(e.ctx.sourceFile)
+	ioc.WriteFile(e.file.filename, e.buffer)
+}
 
-	if err != nil {
-		fmt.Println(err)
+func (e *Editor) handleCommand(ch rune) {
+	switch ch {
+	case 'q':
+		e.Close()
+	case 'e':
+		e.mode = MODE_EDIT
+	case 'w':
+		e.writeFile()
 	}
-	writer := bufio.NewWriter(file)
-	for _, line := range e.ctx.textBuffer {
-		linetoWrite := string(line) + "\n"
-		writer.WriteString(linetoWrite)
-	}
-	e.ctx.modifiedFile = false
-	writer.Flush()
-	defer file.Close()
 }
 
-func (e *Editor) eraseCol() {
-	e.ctx.currentCol--
-	alteredRow := make([]rune, len(e.getCurrentRow())-1)
-	copy(alteredRow[:e.ctx.currentCol], e.getCurrentRow()[:e.ctx.currentCol])
-	copy(alteredRow[e.ctx.currentCol:], e.getCurrentRow()[e.ctx.currentCol:])
-	e.ctx.textBuffer[e.ctx.currentRow] = alteredRow
-}
-
-func (e *Editor) eraseLine() {
-	appendedLine := make([]rune, len(e.ctx.textBuffer[e.ctx.currentRow]))
-	copy(appendedLine, e.getCurrentRow()[e.ctx.currentCol:])
-
-	newTextBuffer := make([][]rune, len(e.ctx.textBuffer)-1)
-
-	copy(newTextBuffer[:e.ctx.currentRow], e.ctx.textBuffer[:e.ctx.currentRow])
-	copy(newTextBuffer[e.ctx.currentRow:], e.ctx.textBuffer[e.ctx.currentRow+1:])
-
-	e.ctx.textBuffer = newTextBuffer
-	e.ctx.currentRow--
-
-	e.ctx.currentCol = len(e.getCurrentRow())
-
-	updatedLine := make([]rune, len(e.ctx.textBuffer)+len(appendedLine))
-
-	copy(updatedLine[:len(e.getCurrentRow())], e.getCurrentRow())
-	copy(updatedLine[len(e.getCurrentRow()):], appendedLine)
-
-	e.ctx.textBuffer[e.ctx.currentRow] = updatedLine
-
-}
-
-func (e *Editor) deleteRune() {
-	if e.ctx.currentCol > 0 {
-		e.eraseCol()
-	} else if e.ctx.currentRow > 0 {
-		e.eraseLine()
+func (e *Editor) handleNonChar(key termbox.Event) {
+	switch key.Key {
+	case termbox.KeySpace:
+		e.buffer.Write(key.Ch)
+	case termbox.KeyEnter:
+		e.buffer.BreakLine()
+	case termbox.KeyCtrlQ:
+		e.Close()
+	case termbox.KeyBackspace:
+	case termbox.KeyBackspace2:
+		e.buffer.Erase()
+	default:
+		break
 	}
 }
 
 func (e *Editor) processKeyEvent() {
-	keyEvent := getKey()
+	keyEvent := ioc.GetPressedKey()
 	if keyEvent.Key == termbox.KeyEsc {
-		e.ctx.mode = MODE_DEFAULT
+		e.mode = MODE_DEFAULT
 	} else if keyEvent.Ch != 0 {
-		if e.ctx.mode == MODE_EDIT {
-			e.insertRune(keyEvent)
-			e.ctx.modifiedFile = true
+		if e.mode == MODE_EDIT {
+			e.buffer.Write(keyEvent.Ch)
+			e.file.modified = true
 			return
 		}
-		switch keyEvent.Ch {
-		case 'q':
-			termbox.Close()
-			os.Exit(0)
-		case 'e':
-			e.ctx.mode = MODE_EDIT
-
-		case 'w':
-			e.writeFile()
-		}
+		e.handleCommand(keyEvent.Ch)
 	} else {
-		switch keyEvent.Key {
-		case termbox.KeySpace:
-			e.insertRune(keyEvent)
-		case termbox.KeyEnter:
-			e.addLine()
-		case termbox.KeyCtrlQ:
-			e.Close()
-			os.Exit(0)
-		default:
-			break
+		if e.mode == MODE_EDIT {
+			e.handleNonChar(keyEvent)
 		}
-
-		if e.ctx.mode == MODE_EDIT {
-			switch keyEvent.Key {
-			case termbox.KeyBackspace:
-			case termbox.KeyBackspace2:
-				e.deleteRune()
-
-			}
-		}
+		e.buffer.UpdateCol()
 	}
-}
-
-func getKey() termbox.Event {
-	var event termbox.Event
-	switch event = termbox.PollEvent(); event.Type {
-	case termbox.EventKey:
-		return event
-	case termbox.EventError:
-		panic(event.Err)
-	}
-	return event
-}
-
-const CTRL_Q byte = 17
-
-func getTermios(fd uintptr) *syscall.Termios {
-	var t syscall.Termios
-	_, _, err := syscall.Syscall6(
-		syscall.SYS_IOCTL, // Input output control
-		os.Stdin.Fd(),
-		syscall.TCGETS,
-		uintptr(unsafe.Pointer(&t)),
-		0, 0, 0)
-
-	if err != 0 {
-		panic("Error getting termios")
-	}
-
-	return &t
-}
-
-func setTermios(fd uintptr, term *syscall.Termios) {
-	_, _, err := syscall.Syscall6(
-		syscall.SYS_IOCTL,
-		os.Stdin.Fd(),
-		syscall.TCSETS,
-		uintptr(unsafe.Pointer(term)),
-		0, 0, 0)
-	if err != 0 {
-		panic("err")
-	}
-}
-
-func setRaw(term *syscall.Termios) {
-	// This attempts to replicate the behaviour documented for cfmakeraw in
-	// the termios(3) manpage.
-	term.Iflag &^= syscall.IGNBRK | syscall.BRKINT | syscall.PARMRK | syscall.ISTRIP | syscall.INLCR | syscall.IGNCR | syscall.ICRNL | syscall.IXON
-	// newState.Oflag &^= syscall.OPOST
-	term.Lflag &^= syscall.ECHO | syscall.ECHONL | syscall.ICANON | syscall.ISIG | syscall.IEXTEN
-	term.Cflag &^= syscall.CSIZE | syscall.PARENB
-	term.Cflag |= syscall.CS8
-
-	term.Cc[syscall.VMIN] = 1
-	term.Cc[syscall.VTIME] = 0
-}
-
-func setupRawMode(editorConfig *EditorCtx) {
-	editorConfig.originTermios = getTermios(os.Stdin.Fd())
-	defer setTermios(
-		os.Stdin.Fd(),
-		editorConfig.originTermios)
-
-	setRaw(editorConfig.originTermios)
-	setTermios(os.Stdin.Fd(), editorConfig.originTermios)
-}
-
-func runEditor() {
-	for {
-		tinterface.EditorRefreshScreen()
-		processKeyPressed()
-	}
-}
-
-func processKeyPressed() {
-	buffer := make([]byte, 1)
-	syscall.Read(0, buffer)
-	ch := string(buffer)
-	print(ch)
-
-	if buffer[0] == CTRL_Q {
-		tinterface.EditorRefreshScreen()
-		os.Exit(0)
-	}
-}
-
-func initEditor(editorConfig *EditorCtx) {
-	editorConfig.screenCols, editorConfig.screenRows, _ = common.GetWindowSize()
-	setupRawMode(editorConfig)
 }
 
 func ReadFile(filename string, editorCtx *EditorCtx) {

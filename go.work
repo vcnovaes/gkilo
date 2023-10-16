@@ -2,7 +2,9 @@ go 1.19
 
 use (
 	.
+	./internal/IO
 	./internal/common
 	./internal/core
-	./internal/interface
+	./internal/core/TextBuffer
+	./internal/render
 )
