@@ -160,3 +160,27 @@ func (tb *TextBuffer) LoadFile(file *os.File) {
 		tb.buffer = append(tb.buffer, BufferLine{})
 	}
 }
+
+func (tb *TextBuffer) MoveCursorUp() {
+	if tb.currRow != 0 {
+		tb.currRow--
+	}
+}
+
+func (tb *TextBuffer) MoveCursorDown() {
+	if tb.currRow < (len(tb.buffer) - 1) {
+		tb.currRow++
+	}
+}
+
+func (tb *TextBuffer) MoveCursorLeft() {
+	if tb.currCol > 0 {
+		tb.currCol--
+	}
+}
+
+func (tb *TextBuffer) MoveCursorRight() {
+	if tb.currCol < (len(tb.currentLine()) - 1) {
+		tb.currCol++
+	}
+}

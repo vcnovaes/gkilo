@@ -97,7 +97,7 @@ func (e *Editor) handleCommand(ch rune) {
 	}
 }
 
-func (e *Editor) handleNonChar(key termbox.Event) {
+func (e *Editor) handleNoCharEditInput(key termbox.Event) {
 	switch key.Key {
 	case termbox.KeySpace:
 		e.buffer.Write(key.Ch)
@@ -110,6 +110,18 @@ func (e *Editor) handleNonChar(key termbox.Event) {
 		e.buffer.Erase()
 	default:
 		break
+	}
+}
+func (e *Editor) handleNoChar(key termbox.Key) {
+	switch key {
+	case termbox.KeyArrowRight:
+		e.buffer.MoveCursorRight()
+	case termbox.KeyArrowLeft:
+		e.buffer.MoveCursorLeft()
+	case termbox.KeyArrowDown:
+		e.buffer.MoveCursorDown()
+	case termbox.KeyArrowUp:
+		e.buffer.MoveCursorUp()
 	}
 }
 
@@ -126,8 +138,10 @@ func (e *Editor) processKeyEvent() {
 		e.handleCommand(keyEvent.Ch)
 	} else {
 		if e.mode == MODE_EDIT {
-			e.handleNonChar(keyEvent)
+			e.handleNoCharEditInput(keyEvent)
 		}
+		e.handleNoChar(keyEvent.Key)
+
 		e.buffer.UpdateCol()
 	}
 }
