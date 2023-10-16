@@ -14,6 +14,9 @@ func LoadInputFile(defaultfile string) (*os.File, string, error) {
 		sourcefile = os.Args[1]
 	}
 	file, err := os.Open(sourcefile)
+	if err != nil {
+		file, err = os.Create(sourcefile)
+	}
 	return file, sourcefile, err
 }
 

@@ -67,8 +67,8 @@ func (e Editor) Close() {
 
 func (e *Editor) Run() {
 	theme := render.Theme{
-		LineNumber:       render.Composition{FG: termbox.ColorGreen, BG: termbox.ColorDarkGray},
-		Text:             render.Composition{FG: termbox.ColorLightGreen, BG: termbox.ColorBlack},
+		LineNumber:       render.Composition{FG: termbox.ColorLightMagenta, BG: termbox.ColorDefault},
+		Text:             render.Composition{FG: termbox.ColorGreen, BG: termbox.ColorDefault},
 		EmptyLine:        render.Composition{FG: termbox.ColorDefault, BG: termbox.ColorDefault},
 		EditorBackground: termbox.ColorDefault,
 		EmptyLineSymbol:  "~",
