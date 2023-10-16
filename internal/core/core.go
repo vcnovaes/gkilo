@@ -185,6 +185,22 @@ func (e *Editor) addLine() {
 	e.ctx.textBuffer = newBuffer
 }
 
+func (e *Editor) writeFile() {
+	file, err := os.Create(e.ctx.sourceFile)
+
+	if err != nil {
+		fmt.Println(err)
+	}
+	writer := bufio.NewWriter(file)
+	for _, line := range e.ctx.textBuffer {
+		linetoWrite := string(line) + "\n"
+		writer.WriteString(linetoWrite)
+	}
+	e.ctx.modifiedFile = false
+	writer.Flush()
+	defer file.Close()
+}
+
 func (e *Editor) processKeyEvent() {
 	keyEvent := getKey()
 	if keyEvent.Key == termbox.KeyEsc {
@@ -206,8 +222,10 @@ func (e *Editor) processKeyEvent() {
 			termbox.Close()
 			os.Exit(0)
 		case 'e':
-			print("EDIT")
 			e.ctx.mode = MODE_EDIT
+
+		case 'w':
+			e.writeFile()
 		}
 	} else {
 		switch keyEvent.Key {
