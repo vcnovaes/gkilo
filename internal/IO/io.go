@@ -8,12 +8,13 @@ import (
 	"github.com/nsf/termbox-go"
 )
 
-func LoadInputFile(defaultfile string) (*os.File, error) {
+func LoadInputFile(defaultfile string) (*os.File, string, error) {
 	sourcefile := defaultfile
 	if len(os.Args) > 1 {
 		sourcefile = os.Args[1]
 	}
-	return os.Open(sourcefile)
+	file, err := os.Open(sourcefile)
+	return file, sourcefile, err
 }
 
 func WriteFile(sourcefile string, buffer textbuffer.TextBuffer) error {

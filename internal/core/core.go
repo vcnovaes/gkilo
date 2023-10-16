@@ -50,7 +50,9 @@ func (e *Editor) Init() {
 		fmt.Print(err)
 		os.Exit(1)
 	}
-	file, err := ioc.LoadInputFile("unamed")
+	defaultfilename := "unamed"
+	file, filename, err := ioc.LoadInputFile(defaultfilename)
+	e.file.filename = filename
 	if err != nil {
 		fmt.Println("Error on inputfile:", err)
 		os.Exit(1)
