@@ -160,6 +160,9 @@ func (tb *TextBuffer) LoadFile(file *os.File) {
 		tb.buffer = append(tb.buffer, BufferLine{})
 	}
 }
+func (tb *TextBuffer) SetBuffer(buffer []BufferLine) {
+	tb.buffer = buffer
+}
 
 func (tb *TextBuffer) MoveCursorUp() {
 	if tb.currRow != 0 {
