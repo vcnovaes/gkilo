@@ -1,6 +1,7 @@
-package ioc
+package ioc_test
 
 import (
+	"ioc"
 	"os"
 	"testing"
 	"textbuffer"
@@ -15,7 +16,7 @@ func TestLoadInputFile(t *testing.T) {
 	defer os.Remove(tempFile.Name()) // Clean up the temporary file
 
 	// Test loading the existing file
-	file, _, err := LoadInputFile(tempFile.Name())
+	file, _, err := ioc.LoadInputFile(tempFile.Name())
 	if err != nil {
 		t.Errorf("LoadInputFile() failed with an existing file: %v", err)
 	}
@@ -25,7 +26,7 @@ func TestLoadInputFile(t *testing.T) {
 	file.Close()
 
 	// Test creating a new file
-	newFile, _, newErr := LoadInputFile("nonexistent.txt")
+	newFile, _, newErr := ioc.LoadInputFile("nonexistent.txt")
 	if newErr != nil {
 		t.Errorf("LoadInputFile() failed when creating a new file: %v", newErr)
 	}
@@ -52,7 +53,7 @@ func TestWriteFile(t *testing.T) {
 	}
 	buffer.SetBuffer([]textbuffer.BufferLine{testlines[0], testlines[1]})
 
-	err = WriteFile(tempFile.Name(), buffer)
+	err = ioc.WriteFile(tempFile.Name(), buffer)
 	if err != nil {
 		t.Errorf("WriteFile() failed: %v", err)
 	}
