@@ -1,12 +1,10 @@
 package core
 
 import (
-	"bufio"
 	"fmt"
 	"ioc"
 	"os"
 	"render"
-	"syscall"
 	"textbuffer"
 
 	"github.com/nsf/termbox-go"
@@ -19,21 +17,7 @@ const (
 	MODE_EDIT
 )
 
-type EditorCtx struct {
-	originTermios        *syscall.Termios
-	screenRows           int
-	screenCols           int
-	sourceFile           string
-	currentRow           int
-	currentCol           int
-	textBuffer           [][]rune
-	lineNumberWidth      int
-	offsetCol, offsetRow int
-	modifiedFile         bool
-	mode                 Mode
-}
 type Editor struct {
-	ctx    EditorCtx
 	buffer textbuffer.TextBuffer
 	canvas render.Canvas
 	file   File
@@ -143,27 +127,5 @@ func (e *Editor) processKeyEvent() {
 		e.handleNoChar(keyEvent.Key)
 
 		e.buffer.UpdateCol()
-	}
-}
-
-func ReadFile(filename string, editorCtx *EditorCtx) {
-	file, err := os.Open(filename)
-	editorCtx.sourceFile = filename
-	if err != nil {
-		editorCtx.textBuffer = append(editorCtx.textBuffer, []rune{})
-		return
-	}
-	scanner := bufio.NewScanner(file)
-	lineNumber := 0
-	for scanner.Scan() {
-		scannedLine := scanner.Text()
-		editorCtx.textBuffer = append(editorCtx.textBuffer, []rune{})
-		for _, ch := range scannedLine {
-			editorCtx.textBuffer[lineNumber] = append(editorCtx.textBuffer[lineNumber], rune(ch))
-		}
-		lineNumber++
-	}
-	if lineNumber == 0 {
-		editorCtx.textBuffer = append(editorCtx.textBuffer, []rune{})
 	}
 }
