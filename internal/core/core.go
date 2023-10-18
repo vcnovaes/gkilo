@@ -1,6 +1,7 @@
 package core
 
 import (
+	"editorconfig"
 	"fmt"
 	"ioc"
 	"os"
@@ -49,16 +50,31 @@ func (e Editor) Close() {
 	os.Exit(0)
 }
 
+func LoadThemeFromConfig(config editorconfig.Config) render.Theme {
+	var theme render.Theme
+	theme.EmptyLineSymbol = config.Theme.EmptyLineSymbol
+	theme.EmptyLine.LoadFromStringComposition(config.Theme.EmptyLine)
+	theme.LineNumber.LoadFromStringComposition(config.Theme.LineNumber)
+	theme.Text.LoadFromStringComposition(config.Theme.Text)
+	theme.EditorBackground = render.ColorMap(config.Theme.EditorBackground)
+	return theme
+}
+
 func (e *Editor) Run() {
-	theme := render.Theme{
-		LineNumber:       render.Composition{FG: termbox.ColorLightMagenta, BG: termbox.ColorDefault},
-		Text:             render.Composition{FG: termbox.ColorGreen, BG: termbox.ColorDefault},
-		EmptyLine:        render.Composition{FG: termbox.ColorDefault, BG: termbox.ColorDefault},
-		EditorBackground: termbox.ColorDefault,
-		EmptyLineSymbol:  "~",
-	}
+	config := editorconfig.GetConfig()
+	theme := LoadThemeFromConfig(config)
+
+	changed := make(chan bool)
+	go editorconfig.WatchFile(editorconfig.CONFIG_FILE, changed)
 
 	for {
+		go func() {
+			update := <-changed
+			if update {
+				config = editorconfig.GetConfig()
+				theme = LoadThemeFromConfig(config)
+			}
+		}()
 		e.canvas.Init(theme)
 		e.buffer.Update(&e.canvas)
 		e.canvas.Flush()
@@ -71,6 +87,7 @@ func (e *Editor) writeFile() {
 }
 
 func (e *Editor) handleCommand(ch rune) {
+
 	switch ch {
 	case 'q':
 		e.Close()

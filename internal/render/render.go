@@ -1,6 +1,7 @@
 package render
 
 import (
+	"editorconfig"
 	"strconv"
 
 	"github.com/mattn/go-runewidth"
@@ -15,8 +16,36 @@ type Theme struct {
 	EmptyLineSymbol  string
 }
 
+func ColorMap(color string) termbox.Attribute {
+	colormap := make(map[string]termbox.Attribute)
+	colormap["blue"] = (termbox.ColorBlue)
+	colormap["lightblue"] = (termbox.ColorLightBlue)
+	colormap["green"] = (termbox.ColorGreen)
+	colormap["lightgreen"] = (termbox.ColorLightBlue)
+	colormap["black"] = (termbox.ColorBlack)
+	colormap["default"] = (termbox.ColorDefault)
+	colormap["magenta"] = (termbox.ColorMagenta)
+	colormap["lightmagenta"] = (termbox.ColorLightMagenta)
+	colormap["red"] = (termbox.ColorRed)
+	colormap["lightred"] = (termbox.ColorLightRed)
+	colormap["white"] = (termbox.ColorWhite)
+
+	return colormap[color]
+
+}
+
 type Composition struct {
 	FG, BG termbox.Attribute
+}
+
+func (c *Composition) LoadFromString(fg, bg string) {
+	c.BG = ColorMap(bg)
+	c.FG = ColorMap(fg)
+}
+
+func (c *Composition) LoadFromStringComposition(cstr editorconfig.CompositionStr) {
+	c.BG = ColorMap(cstr.BG)
+	c.FG = ColorMap(cstr.FG)
 }
 
 type Canvas struct {
