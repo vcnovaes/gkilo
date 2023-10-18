@@ -100,9 +100,9 @@ func (e *Editor) handleCommand(ch rune) {
 	case 'k':
 		e.buffer.MoveCursorUp()
 	case 'l':
-		e.buffer.MoveCursorLeft()
-	case 'h':
 		e.buffer.MoveCursorRight()
+	case 'h':
+		e.buffer.MoveCursorLeft()
 	}
 }
 
