@@ -40,21 +40,21 @@ func (tb *TextBuffer) Write(char rune) {
 }
 
 func (tb *TextBuffer) BreakLine() {
-	firstHalf := make([]rune, len(tb.currentLine()[tb.currCol:]))
-	secondHalf := make([]rune, len(tb.currentLine()[:tb.currCol]))
-	// copying the content
+
+	firstHalf := make([]rune, len(tb.currentLine()[:tb.currCol]))
+	secondHalf := make([]rune, len(tb.currentLine()[tb.currCol:]))
+
 	copy(firstHalf, tb.buffer[tb.currRow][:tb.currCol])
 	copy(secondHalf, tb.buffer[tb.currRow][tb.currCol:])
 
-	tb.buffer[tb.currRow] = firstHalf
+	newBuffer := make([]BufferLine, len(tb.buffer)+1)
+	newBuffer[tb.currRow] = firstHalf
 	tb.currRow++
+	newBuffer[tb.currRow] = secondHalf
 	tb.currCol = 0
 
-	newBuffer := make([]BufferLine, len(tb.buffer)+1)
-	copy(newBuffer[:tb.currRow], tb.buffer[:tb.currRow])
-	newBuffer[tb.currRow] = secondHalf
-
-	copy(newBuffer[tb.currRow+1:], tb.buffer[tb.currRow:])
+	copy(newBuffer[:tb.currRow], tb.buffer[:tb.currRow-1])
+	copy(newBuffer[tb.currRow:], tb.buffer[tb.currRow:])
 
 	tb.buffer = newBuffer
 }
@@ -63,7 +63,7 @@ func (tb *TextBuffer) eraseCol() {
 	tb.currCol--
 	alteredRow := make([]rune, len(tb.currentLine())-1)
 	copy(alteredRow[:tb.currCol], tb.currentLine()[:tb.currCol])
-	copy(alteredRow[tb.currCol:], tb.currentLine()[tb.currCol:])
+	copy(alteredRow[tb.currCol:], tb.currentLine()[tb.currCol+1:])
 	tb.buffer[tb.currRow] = alteredRow
 }
 
@@ -98,9 +98,10 @@ func (tb *TextBuffer) Erase() {
 }
 
 func (tb *TextBuffer) Display(canvas *render.Canvas) {
+	var col int
 	for row := 0; row < canvas.Height; row++ {
 		tbRow := row + tb.offsetRow
-		for col := 0; col < canvas.Width; col++ {
+		for col = 0; col < canvas.Width; col++ {
 			tbCol := col + tb.offsetCol
 			if tbRow < len(tb.buffer) {
 				canvas.RenderLineNumber(row, tb.offsetRow)
@@ -115,7 +116,7 @@ func (tb *TextBuffer) Display(canvas *render.Canvas) {
 				canvas.RenderEmptyRow(row)
 			}
 		}
-		canvas.RenderLineBreak(row)
+		canvas.RenderLineBreak(col, row)
 	}
 }
 

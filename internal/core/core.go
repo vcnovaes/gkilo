@@ -78,6 +78,14 @@ func (e *Editor) handleCommand(ch rune) {
 		e.mode = MODE_EDIT
 	case 'w':
 		e.writeFile()
+	case 'j':
+		e.buffer.MoveCursorDown()
+	case 'k':
+		e.buffer.MoveCursorUp()
+	case 'l':
+		e.buffer.MoveCursorLeft()
+	case 'h':
+		e.buffer.MoveCursorRight()
 	}
 }
 
@@ -123,6 +131,7 @@ func (e *Editor) processKeyEvent() {
 	} else {
 		if e.mode == MODE_EDIT {
 			e.handleNoCharEditInput(keyEvent)
+			return
 		}
 		e.handleNoChar(keyEvent.Key)
 

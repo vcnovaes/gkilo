@@ -17,3 +17,4 @@ The default mode don't allow editing, so you must type a command key
 
 - `e`: to edit
 - `w` : to write the file
+- `q` : to quit

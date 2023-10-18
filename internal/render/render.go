@@ -51,9 +51,9 @@ func (c *Canvas) RenderRune(col, row int, char rune) {
 		string(char))
 }
 
-func (c *Canvas) RenderLineBreak(row int) {
+func (c *Canvas) RenderLineBreak(col, row int) {
 	render(
-		c.Width-1,
+		col,
 		row,
 		c.theme.Text.FG, c.theme.Text.BG, "\n")
 }
