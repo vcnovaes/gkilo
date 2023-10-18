@@ -131,7 +131,6 @@ func (e *Editor) processKeyEvent() {
 	} else {
 		if e.mode == MODE_EDIT {
 			e.handleNoCharEditInput(keyEvent)
-			return
 		}
 		e.handleNoChar(keyEvent.Key)
 

@@ -79,9 +79,9 @@ func (tb *TextBuffer) eraseLine() {
 	tb.buffer = newTextBuffer
 	tb.currRow--
 
-	tb.currCol = len(tb.currentLine())
+	tb.currCol = len(tb.currentLine()) + 1
 
-	updatedLine := make([]rune, len(tb.buffer)+len(appendedLine))
+	updatedLine := make([]rune, len(tb.currentLine())+len(appendedLine)+1)
 
 	copy(updatedLine[:len(tb.currentLine())], tb.currentLine())
 	copy(updatedLine[len(tb.currentLine()):], appendedLine)
