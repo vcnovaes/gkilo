@@ -1,7 +1,7 @@
 package main
 
 import (
-	"core"
+	"github.com/vcnovaes/gkilo/src/internal/core"
 )
 
 func main() {

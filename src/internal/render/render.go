@@ -1,8 +1,9 @@
 package render
 
 import (
-	"editorconfig"
 	"strconv"
+
+	"github.com/vcnovaes/gkilo/src/internal/editorconfig"
 
 	"github.com/mattn/go-runewidth"
 	"github.com/nsf/termbox-go"

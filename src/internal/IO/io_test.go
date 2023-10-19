@@ -1,10 +1,11 @@
 package ioc_test
 
 import (
-	"ioc"
 	"os"
 	"testing"
-	"textbuffer"
+
+	ioc "github.com/vcnovaes/gkilo/src/internal/IO"
+	textbuffer "github.com/vcnovaes/gkilo/src/internal/core/TextBuffer"
 )
 
 func TestLoadInputFile(t *testing.T) {

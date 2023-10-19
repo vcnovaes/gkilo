@@ -3,7 +3,8 @@ package ioc
 import (
 	"bufio"
 	"os"
-	"textbuffer"
+
+	textbuffer "github.com/vcnovaes/gkilo/src/internal/core/TextBuffer"
 
 	"github.com/nsf/termbox-go"
 )

@@ -1,12 +1,13 @@
 package core
 
 import (
-	"editorconfig"
 	"fmt"
-	"ioc"
 	"os"
-	"render"
-	"textbuffer"
+
+	ioc "github.com/vcnovaes/gkilo/src/internal/IO"
+	textbuffer "github.com/vcnovaes/gkilo/src/internal/core/TextBuffer"
+	"github.com/vcnovaes/gkilo/src/internal/editorconfig"
+	"github.com/vcnovaes/gkilo/src/internal/render"
 
 	"github.com/nsf/termbox-go"
 )

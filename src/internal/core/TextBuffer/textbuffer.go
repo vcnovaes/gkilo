@@ -3,7 +3,8 @@ package textbuffer
 import (
 	"bufio"
 	"os"
-	"render"
+
+	"github.com/vcnovaes/gkilo/src/internal/render"
 )
 
 type TextBuffer struct {
