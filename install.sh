@@ -20,7 +20,7 @@ else
 fi
 
 # Build the new binary
-go build -o "$DESTINATION_PATH/gkilo" ./cmd/main/main.go
+go build -o "$DESTINATION_PATH/gkilo" ./src/main.go
 
 # Set the environment variable
 export GKILO_HOME="$GKILO_PATH"
